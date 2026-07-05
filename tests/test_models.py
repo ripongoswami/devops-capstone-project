@@ -5,6 +5,7 @@ Test cases for Account Model
 import logging
 import unittest
 import os
+from datetime import date
 from service import app
 from service.models import Account, DataValidationError, db
 from tests.factories import AccountFactory
@@ -175,3 +176,39 @@ class TestAccount(unittest.TestCase):
         """It should not Deserialize an account with a TypeError"""
         account = Account()
         self.assertRaises(DataValidationError, account.deserialize, [])
+
+    def test_module_init_db(self):
+        """It should call the module level init_db()"""
+        from service.models import init_db as module_init_db
+        try:
+            module_init_db(app)
+        except Exception as error:
+            self.fail(f"module_init_db() raised an exception unexpectedly: {error}")
+
+    def test_repr(self):
+        """It should output a string representation of the account"""
+        account = AccountFactory()
+        account.create()
+        # Create the expected string based on the __repr__ logic
+        expected_repr = f"<Account {account.name} id=[{account.id}]>"
+        self.assertEqual(repr(account), expected_repr)
+
+    def test_deserialize_without_date_joined(self):
+        """It should Deserialize an account and default the date if missing"""
+        account = AccountFactory()
+        serial_account = account.serialize()
+
+        # Remove date_joined to trigger the 'else' branch in deserialize
+        del serial_account["date_joined"]
+
+        new_account = Account()
+        new_account.deserialize(serial_account)
+
+        # Verify normal fields were deserialized
+        self.assertEqual(new_account.name, account.name)
+        self.assertEqual(new_account.email, account.email)
+        self.assertEqual(new_account.address, account.address)
+        self.assertEqual(new_account.phone_number, account.phone_number)
+
+        # Verify the missing date_joined defaulted to today's date
+        self.assertEqual(new_account.date_joined, date.today())
