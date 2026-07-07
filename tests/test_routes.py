@@ -215,3 +215,4 @@ class TestAccountService(TestCase):
         # Calling DELETE on the base URL (which only accepts POST or GET for list)
         resp = self.client.delete(BASE_URL)
         self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        
